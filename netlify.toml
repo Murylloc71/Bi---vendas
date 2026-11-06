@@ -1,0 +1,17 @@
+# O Netlify só hospeda a INTERFACE. A API em Python não roda aqui.
+# Para usar o Netlify:
+#   1. publique o BI completo no Replit ou no Render;
+#   2. troque o endereço abaixo pelo link desse BI publicado;
+#   3. publique este repositório no Netlify.
+# O Netlify repassa tudo que for /api/... para o servidor, então a interface funciona como se fosse um site só.
+
+[build]
+  base = "frontend"
+  command = "npm ci && npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://SEU-BI.replit.app/api/:splat"
+  status = 200
+  force = true

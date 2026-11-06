@@ -1,4 +1,5 @@
+node_modules/
+storage/
 __pycache__/
 *.pyc
-.env
-venv/
+.deps-hash

@@ -1,0 +1,17 @@
+modules = ["python-3.11", "nodejs-20", "postgresql-16"]
+run = "bash start.sh"
+
+[nix]
+channel = "stable-24_05"
+
+[env]
+PYTHONUNBUFFERED = "1"
+
+[deployment]
+build = ["bash", "build.sh"]
+run = ["bash", "start.sh"]
+deploymentTarget = "vm"
+
+[[ports]]
+localPort = 8000
+externalPort = 80

@@ -1,0 +1,41 @@
+# Configuração para o Render (render.com). No painel: New + > Blueprint > escolha este repositório.
+# As variáveis marcadas com "sync: false" são pedidas na criação: preencha com os seus valores.
+services:
+  - type: web
+    name: bi-vendas
+    runtime: python
+    plan: free                      # troque para "starter" (~US$ 7/mês) para o servidor não dormir
+    region: virginia                # o Neon também deve ficar nos EUA (us-east)
+    buildCommand: bash build.sh
+    startCommand: bash start.sh
+    healthCheckPath: /api/saude
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATABASE_URL           # endereço do banco no Neon (Connection string)
+        sync: false
+      - key: BI_SENHA               # senha de acesso completo ao BI
+        sync: false
+      - key: BI_SENHA_LEITURA       # opcional: senha só de consulta (deixe em branco se não quiser)
+        sync: false
+      - key: BI_SEGREDO             # assina o login; o Render gera sozinho
+        generateValue: true
+      - key: CRON_TOKEN             # senha do endereço chamado pelo agendador das 12h; o Render gera sozinho
+        generateValue: true
+      - key: OMIE_APP_KEY           # pedidos de compra (opcional, pode configurar depois na tela Dados › Omie)
+        sync: false
+      - key: OMIE_APP_SECRET
+        sync: false
+      - key: OMIE03_APP_KEY         # estoque Unlock (Omie 03)
+        sync: false
+      - key: OMIE03_APP_SECRET
+        sync: false
+      - key: OMIE04_APP_KEY         # estoque Juatuba (Omie 04)
+        sync: false
+      - key: OMIE04_APP_SECRET
+        sync: false
+      - key: QIVE_API_ID            # compras pelo Qive (opcional)
+        sync: false
+      - key: QIVE_API_KEY
+        sync: false
