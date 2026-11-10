@@ -615,7 +615,7 @@ def omie_sincronizar():
 @app.post("/api/importar/previa")
 async def previa(arquivo: UploadFile = File(...), tipo: str | None = Form(None),
                  deposito: str | None = Form(None), data_referencia: str | None = Form(None),
-                 modo: str | None = Form(None)):
+                 modo: str | None = Form(None), fila: str | None = Form(None)):
     conteudo = await arquivo.read()
     if len(conteudo) > MAX_UPLOAD:
         raise HTTPException(413, "Arquivo maior que 30 MB.")
@@ -628,13 +628,41 @@ async def previa(arquivo: UploadFile = File(...), tipo: str | None = Form(None),
                 "colunas": {k: list(v.columns) for k, v in prep["abas"].items()},
                 "resumo": None, "mensagem": "Não reconheci o tipo do arquivo. Escolha vendas, estoque ou compras."}
     params = {"deposito": deposito, "data_referencia": data_referencia, "modo": modo}
-    return imp.executar(prep["token"], t, None, params, confirmar=False)
+    sug = None
+    if t == "vendas_dia":
+        # canal, conta e período já vêm preenchidos (nome do arquivo, último envio, sequência)
+        try:
+            hoje = date.fromisoformat(data_referencia) if data_referencia else date.today()
+            na_tela = json.loads(fila) if fila else []
+            sug = imp.sugerir_vendas_dia(arquivo.filename, prep["abas"], hoje, na_tela if isinstance(na_tela, list) else [])
+            params.update({k: sug[k] for k in ("canal", "conta", "periodo_inicio", "periodo_fim")})
+        except Exception:  # noqa: BLE001 - a sugestão nunca impede a prévia
+            sug = None
+    r = imp.executar(prep["token"], t, None, params, confirmar=False)
+    r["sugestao"] = sug
+    return r
 
 
 @app.post("/api/importar/simular")
 def simular(corpo: dict = Body(...)):
-    """Refaz a prévia com mapeamento/parâmetros ajustados."""
-    return imp.executar(corpo["token"], corpo["tipo"], corpo.get("mapeamento"), corpo.get("parametros", {}), confirmar=False)
+    """Refaz a prévia com mapeamento/parâmetros ajustados.
+    resugerir_periodo (vendas por período): depois de trocar canal ou conta, o período volta a ser
+    o seguinte ao último envio do novo canal/conta."""
+    params = dict(corpo.get("parametros") or {})
+    origem = None
+    if corpo.get("tipo") == "vendas_dia" and corpo.get("resugerir_periodo"):
+        try:
+            hoje = date.fromisoformat(corpo.get("hoje") or "")
+        except ValueError:
+            hoje = date.today()
+        fila = corpo.get("fila") if isinstance(corpo.get("fila"), list) else []
+        (ini, fim), origem = imp.periodo_seguinte_vendas_dia(params.get("canal"), params.get("conta"), hoje, fila)
+        params.update(periodo_inicio=ini.isoformat(), periodo_fim=fim.isoformat())
+        origem["no_futuro"] = ini > hoje
+    r = imp.executar(corpo["token"], corpo["tipo"], corpo.get("mapeamento"), params, confirmar=False)
+    if origem:
+        r["origem_periodo"] = origem
+    return r
 
 
 @app.post("/api/importar/confirmar")

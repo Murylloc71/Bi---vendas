@@ -186,7 +186,8 @@ def reposicao(d: ind.Dados, categoria="calcado", nivel="sku", fornecedor=None, h
                           previsao=("previsao", "min"), skus=("sku", "nunique"))
     g["cob"] = np.where(g["dem"] > 0, g["estoque"].clip(lower=0) / g["dem"], np.nan)
     g["cob_ped"] = np.where(g["dem"] > 0, (g["estoque"].clip(lower=0) + g["a_receber"]) / g["dem"], np.nan)
-    g["dias_ate"] = (g["previsao"] - hoje).dt.days
+    # sem nenhum pedido com previsão a coluna vem sem tipo de data: converte antes de subtrair
+    g["dias_ate"] = (pd.to_datetime(g["previsao"], errors="coerce") - hoje).dt.days
 
     def situacao(r):
         if r.dem <= 0:
